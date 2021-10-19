@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import List, Any
 
+import json
+
 
 class CycledList:
     """
@@ -24,9 +26,16 @@ class CycledList:
     """
     def __init__(self, size: int):
         self._data = []
+        self.size = size
+        self.count = 0
 
     def append(self, item):
-        pass
+        if len(self._data) < self.size:
+            self._data.append(item)
+            self.count += 1
+        else:
+            self._data[self.count % self.size] = item
+            self.count += 1
 
 
 class Fraction:
@@ -45,23 +54,35 @@ class Fraction:
     """
 
     def __init__(self, nominator, denominator):
-        self.nominator = nominator
-        self.denominator = denominator
+        a = nominator
+        b = denominator
+        r = a % b
+        while r:
+            a = b
+            b = r
+            r = a % b
+        self.nominator = nominator // b
+        self.denominator = denominator // b
 
-    def __truediv__(self, other):
-        pass
+    def __truediv__(self, other: Fraction):
+        return Fraction(self.nominator*other.denominator, self.denominator*other.nominator)
 
-    def __add__(self, other):
-        return Fraction(..., ...)
+    def __add__(self, other: Fraction):
+        return Fraction(self.nominator*other.denominator+self.denominator*other.nominator,
+                        self.denominator*other.denominator)
 
-    def __mul__(self, other):
-        pass
+    def __mul__(self, other: Fraction):
+        return Fraction(self.nominator*other.nominator, self.denominator*other.denominator)
 
     def __sub__(self, other: Fraction) -> Fraction:
-        pass
+        return Fraction(self.nominator*other.denominator-self.denominator*other.nominator,
+                        self.denominator*other.denominator)
 
     def __repr__(self):
         return f'{self.nominator}/{self.denominator}'
+
+    def __eq__(self, other: Fraction):
+        return (self.nominator == other.nominator) and (self.denominator == other.denominator)
 
 
 class MyCounter:
@@ -74,13 +95,20 @@ class MyCounter:
     """
 
     def __init__(self, iterable):
-        self._data = None
+        counter = {}
+        for item in iterable:
+            counter[item] = counter.get(item, 0) + 1
+        self._data = counter
 
     def append(self, item):
-        pass
+        if item in self._data:
+            self._data[item] += 1
+        else:
+            self._data[item] = 0
 
     def remove(self, item):
-        pass
+        if item in self._data:
+            del self._data[item]
 
 
 class Figure:
@@ -101,7 +129,15 @@ class Square(Figure):
     """
     Реализуйте класс квадрат и два метода для него
     """
-    pass
+    def __init__(self, a, b):
+        self.first = a
+        self.sec = b
+
+    def perimeter(self):
+        return self.first*4
+
+    def square(self):
+        return self.first*self.sec
 
 
 class Container:
@@ -126,14 +162,20 @@ class PersistentList:
     Формат файла - json
     """
     def __init__(self, iterable: List[Any], path_to_file: str):
-        pass
+        self.iterable = iterable
+        self.path_to_file = path_to_file
+        with open(self.path_to_file, 'w') as outfile:
+            outfile.write(json.dumps(self.iterable))
 
     def append(self, item) -> None:
         """add item to list"""
+        self.iterable.append(item)
+        with open(self.path_to_file, 'w') as outfile:
+            outfile.write(json.dumps(self.iterable))
 
     def __getitem__(self, index):
         """ return item by index """
-        pass
+        return self.iterable[index]
 
     def delete(self, index: int) -> None:
         """ delete item by index
@@ -144,6 +186,13 @@ class PersistentList:
             if index lower then delete from end of list
 
         """
+        if len(self.iterable) < abs(index) + 1:
+            index = index % len(self.iterable)
+            self.iterable.pop(index)
+        else:
+            self.iterable.pop(index)
+        with open(self.path_to_file, 'w') as outfile:
+            outfile.write(json.dumps(self.iterable))
 
     def __repr__(self):
-        pass
+        return json.dumps(self.iterable, default=lambda x: str(x))
